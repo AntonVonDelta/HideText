@@ -1,0 +1,61 @@
+<textarea id="a" style="width:600px;height:400px" placeholder="Normal text"></textarea>
+
+<textarea id="b" style="width:200px;height:400px" placeholder="Encrypted version of text"></textarea>
+<textarea id="c" style="width:600px;height:400px" placeholder="Decrypted text"></textarea>
+<button onclick="encode()">Encode</button>
+<button onclick="decode()">Decode</button>
+<script>
+function encode(){
+	var secret=document.getElementById("a").value;
+
+	var processed_secret="";
+
+	for(var i=0;i<secret.length;i++){
+		var chr=secret.charCodeAt(i);
+		var f=0;
+		var bin=8;
+		while(bin){
+			if(chr%2){
+				processed_secret+=String.fromCharCode(0x200B);
+			}else {
+				processed_secret+=String.fromCharCode(0x200C);
+			}
+			chr=Math.floor(chr/2);
+			bin--;
+		}
+	}
+	console.log(processed_secret.length);
+	document.getElementById("b").value=processed_secret;
+
+}
+
+function decode(){
+	var secret=document.getElementById("b").value;
+	console.log("////DECODE////"+secret.length);
+	
+	var processed_secret="";
+	var bin=0,bit=0;
+	
+	
+	for(var i=0;i<secret.length;i++){
+		if(secret.charCodeAt(i)!=0x200B && secret.charCodeAt(i)!=0x200C) {bin=0;bit=0;continue;}
+		
+		bin+=Math.pow(2,bit)*(secret.charCodeAt(i)==0x200B?1:0);
+		if(bit==7){
+			processed_secret+=String.fromCharCode(bin);
+			bin=0;bit=0;
+		}else bit++;
+		
+	}
+	console.log("len: "+processed_secret.length);
+	document.getElementById("c").value=processed_secret;
+}
+
+
+
+
+
+
+
+
+</script>
