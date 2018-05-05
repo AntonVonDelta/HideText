@@ -14,7 +14,7 @@ If you receive some sort of special message containing encoded text , insert it 
 For the second tool:
    The user must provide the algorithm with a simple text that will be used to camouflage the special secret data. The user can then copy the resulted text and send it. The secret data is placed in various places in the provided text to ensure a perfect recovery of the data.
    The user can also specify a password.
-   An important aspect of the algorithm is that the result can be re-feeded to the system and by doing so, more messages can be encrypted and hidden.
+   An important aspect of the algorithm is that the result can be re-fed to the system and by doing so, more messages can be encrypted and hidden.
 
 
 ## Technical:
