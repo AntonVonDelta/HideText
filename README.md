@@ -19,7 +19,7 @@ For the second tool:
 
 ## Technical:
    The unicodes that are being used are U200B and U200C. They are used to represent the binary version of the input chracters( need to change this:find more hidden unicodes to increase the storage per character space-currently 1 ASCII chr=8 UNICODES; need to use 7 bit ascii not 8bit.)
-   In the second tool uses a small header to clasify and correct messages. The header has 3 ints: ID of message-a way of filtering out the other copies included in the text for redundancy- (1byte=8 unicode characters)  +  SIZE-of stored ascii data-  +  CHECKSUM.
+   The second tool uses a small header to clasify and correct messages. The header has 3 ints: ID of message-a way of filtering out the other copies included in the text for redundancy- (1byte=8 unicode characters)  +  SIZE-of stored ascii data-  +  CHECKSUM.
    The encryption algorithm is XOR bsed.
    
 ## NOTES
