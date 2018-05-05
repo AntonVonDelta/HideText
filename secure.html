@@ -1,0 +1,288 @@
+<div>
+	<div style="display: inline-block;width: 50%;"><textarea id="a" style="width:600px;height:420px" placeholder="Carrier message(secret will blend in)"></textarea></div>
+	<div style="display: inline-block;width: 30%;">
+		<textarea id="b" style="width:200px;height:400px;display:block;width:100%" placeholder="The secret text"></textarea>
+		<input id="pass" placeholder="Optional password">
+	</div>
+</div>
+<textarea id="c" style="width:600px;height:400px" placeholder="Final text(carrier text+secret blended in)"></textarea>
+<br>
+
+<button onclick="encrypt()">Hide</button>
+<button onclick="decrypt()">Unhide</button>
+<br>
+<p> If you want to hide data in a simple message, enter the text that will be visible(not secret) in the first textarea and the secret datat in the second textarea. Press encrypt to hide/encrypt(with password) the secret datat into the message.
+
+If you want to decrypt some data you have received enter it in the first textarea and click Decrypt.
+</p>
+<script>
+//Copyright © 2013 Devin Weaver <suki@tritarget.org>
+(function(exports) {
+  "use strict";
+
+  var XORCipher = {
+    encode: function(key, data) {
+      data = xor_encrypt(key, data);
+      return b64_encode(data);
+    },
+    decode: function(key, data) {
+      data = b64_decode(data);
+      return xor_decrypt(key, data);
+    }
+  };
+
+  var b64_table = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+
+  function b64_encode(data) {
+    var o1, o2, o3, h1, h2, h3, h4, bits, r, i = 0, enc = "";
+    if (!data) { return data; }
+    do {
+      o1 = data[i++];
+      o2 = data[i++];
+      o3 = data[i++];
+      bits = o1 << 16 | o2 << 8 | o3;
+      h1 = bits >> 18 & 0x3f;
+      h2 = bits >> 12 & 0x3f;
+      h3 = bits >> 6 & 0x3f;
+      h4 = bits & 0x3f;
+      enc += b64_table.charAt(h1) + b64_table.charAt(h2) + b64_table.charAt(h3) + b64_table.charAt(h4);
+    } while (i < data.length);
+    r = data.length % 3;
+    return (r ? enc.slice(0, r - 3) : enc) + "===".slice(r || 3);
+  }
+
+  function b64_decode(data) {
+    var o1, o2, o3, h1, h2, h3, h4, bits, i = 0, result = [];
+    if (!data) { return data; }
+    data += "";
+    do {
+      h1 = b64_table.indexOf(data.charAt(i++));
+      h2 = b64_table.indexOf(data.charAt(i++));
+      h3 = b64_table.indexOf(data.charAt(i++));
+      h4 = b64_table.indexOf(data.charAt(i++));
+      bits = h1 << 18 | h2 << 12 | h3 << 6 | h4;
+      o1 = bits >> 16 & 0xff;
+      o2 = bits >> 8 & 0xff;
+      o3 = bits & 0xff;
+      result.push(o1);
+      if (h3 !== 64) {
+        result.push(o2);
+        if (h4 !== 64) {
+          result.push(o3);
+        }
+      }
+    } while (i < data.length);
+    return result;
+  }
+
+  function keyCharAt(key, i) {
+    return key.charCodeAt( Math.floor(i % key.length) );
+  }
+
+  function xor_encrypt(key, data) {
+    return _.map(data, function(c, i) {
+      return c.charCodeAt(0) ^ keyCharAt(key, i);
+    });
+  }
+
+  function xor_decrypt(key, data) {
+    return _.map(data, function(c, i) {
+      return String.fromCharCode( c ^ keyCharAt(key, i) );
+    }).join("");
+  }
+
+  exports.XORCipher = XORCipher;
+
+})(this);
+
+function checksum(str) {
+  var chk = 0x12345678;
+  var len = str.length;
+  for (var i = 0; i < len; i++) {
+      chk += (str.charCodeAt(i) * (i + 1));
+  }
+  return (chk & 0xffffffff);
+}
+String.prototype.splice = function(idx, rem, str) {
+    return this.slice(0, idx) + str + this.slice(idx + Math.abs(rem));
+};
+
+//Convert 4byte int to unicode
+function IntToUnicode(int){
+	var f=0;
+	var bin=32;
+	var unicode="";
+	
+	while(bin){
+		if(int%2){
+			unicode+=String.fromCharCode(0x200B);
+		}else {
+			unicode+=String.fromCharCode(0x200C);
+		}
+		int=Math.floor(int/2);
+		bin--;
+	}
+	return unicode;
+}
+
+function UnicodeToMsgHeader(str){
+		//3 ints: id+size+checksum
+	var obj={found:false,int:0};
+	if(str.length<96) return {found:false,int:0,string:""};
+	
+	var bin=0,bit=0;
+	for(var i=0;i<32;i++){
+		if(str.charCodeAt(i)!=0x200B && str.charCodeAt(i)!=0x200C) return {found:false,int:0,string:str.substr(i+1)};
+		
+		bin+=Math.pow(2,bit)*(str.charCodeAt(i)==0x200B?1:0);
+		bit++;
+	}
+	obj.id=bin;
+	
+	bin=0;
+	bit=0;
+	for(var i=32;i<64;i++){
+		if(str.charCodeAt(i)!=0x200B && str.charCodeAt(i)!=0x200C) return {found:false,int:0,string:str.substr(32+i+1)};
+		
+		bin+=Math.pow(2,bit)*(str.charCodeAt(i)==0x200B?1:0);
+		bit++;
+	}
+	obj.size=bin;
+	
+	
+	bin=0;
+	bit=0;
+	for(var i=64;i<96;i++){
+		if(str.charCodeAt(i)!=0x200B && str.charCodeAt(i)!=0x200C) return {found:false,int:0,string:str.substr(64+i+1)};
+		
+		bin+=Math.pow(2,bit)*(str.charCodeAt(i)==0x200B?1:0);
+		bit++;
+	}
+	obj.checksum=bin;
+	
+	
+	obj.found=true;
+	obj.string=str.substr(96);		//cut the header
+	return obj;
+}
+function UnicodeToMsg(str,header){
+	if(str.length<header.size*8) return "";
+	
+	var bin=0,bit=0,msg="";
+	for(var i=0;i<header.size*8;i++){
+		if(str.charCodeAt(i)!=0x200B && str.charCodeAt(i)!=0x200C) return "";
+		
+		bin+=Math.pow(2,bit)*(str.charCodeAt(i)==0x200B?1:0);
+		if(bit==7){
+			msg+=String.fromCharCode(bin);
+			bin=0;bit=0;
+		}else bit++;
+	}
+	
+	
+	if(header.checksum==checksum(msg)) return msg;
+	return "";
+	
+}
+
+
+function AsciiToUnicode(chr){
+	var f=0;
+	var bin=8;
+	var unicode="";
+	chr=chr.charCodeAt(0);
+	
+	while(bin){
+		if(chr%2){
+			unicode+=String.fromCharCode(0x200B);
+		}else {
+			unicode+=String.fromCharCode(0x200C);
+		}
+		chr=Math.floor(chr/2);
+		bin--;
+	}
+	return unicode;
+}
+
+function parseInput(input){	
+	var bin=0,bit=0;
+	var id=0;
+	var header;
+	while(input!=""){
+		header=UnicodeToMsgHeader(input);
+		input=header.string;
+		
+		if(header.found) id++;
+	}
+	return id;
+}
+
+function encrypt(){
+	var secret=document.getElementById("b").value;
+	var check_sum=checksum(secret);
+	var id=parseInput(document.getElementById("a").value)+1;
+	var processed_secret="";
+	
+	document.getElementById("c").value="";
+	
+	for(var i=0;i<secret.length;i++){
+		var chr=secret.charCodeAt(i);
+		var f=0;
+		var bin=8;
+		while(bin){
+			if(chr%2){
+				processed_secret+=String.fromCharCode(0x200B);
+			}else {
+				processed_secret+=String.fromCharCode(0x200C);
+			}
+			chr=Math.floor(chr/2);
+			bin--;
+		}
+	}
+	
+	processed_secret=IntToUnicode(id)+IntToUnicode(secret.length)+IntToUnicode(check_sum)+processed_secret;
+	console.log("Hidden packet size: "+processed_secret.length);
+	
+	
+	var input=document.getElementById("a").value;
+	var output=input;
+	var jump=0;
+	jump=input.length*10/100;
+	jump+=Math.floor(Math.random() * input.length*2/100+1);
+	
+	for(var i=0;i<input.length;i+=jump){		
+		//Make sure we don't break another packet conatined by the input
+		if((input.charAt(i)!=0x200B && input.charAt(i)!=0x200C)  ){
+			output=output.splice(i,0,processed_secret);
+		}
+	}
+	document.getElementById("c").value=output;
+}
+function decrypt(){
+	var input=document.getElementById("a").value;
+	document.getElementById("c").value="";
+	console.log("////DECODE////"+input.length);
+	
+	var ids=[];
+	
+	var processed_secret="";
+	var bin=0,bit=0;
+	
+	var header;
+	while(input!=""){
+		header=UnicodeToMsgHeader(input);
+		input=header.string;
+		
+		if(!header.found || ids.indexOf(header.id)!=-1) continue;
+		
+		var msg=UnicodeToMsg(input,header);
+		
+		ids.push(header.id);
+		document.getElementById("c").value+="ID: "+header.id+"   Message:"+msg+"\n";
+		
+		if(msg.length==0) input=input.substr(1);
+		else input=input.substr(header.size*8);
+	
+	}
+}
+</script>
