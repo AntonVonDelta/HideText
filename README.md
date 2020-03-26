@@ -1,7 +1,7 @@
 # HideText
 Encodes visible text in invisble zero-width unicode characters. Append the secret data to a message and send it away. Decode it using same tool.
 There are two tools provided(each stored in index.html and secure.html). The second one is more complex and allows for more messages to be sent through text, includes xor encryption algorithm for data, ensures redundancy by storing the hidden data in various places of the provided text.
-
+Try it here: https://antonvondelta.github.io/HideText/
 ### Purpose
 This tools helps people to hide their important text in a visible message. The secret data consists of special unicode characters that aren't visible on a screen. By appending the encoded data at the end of a message the secret can be transferred with no problem. The receiver can decode using same tools which scans for the special hidden text.
 
